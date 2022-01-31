@@ -24,6 +24,30 @@ const messageSchema = joi.object({
 
 const mongoClient = new MongoClient('mongodb://localhost:27017');
 
+setInterval ( async () => {
+    await mongoClient.connect();
+    const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+    const participants = await dbBatePapoUOL.collection('participants').find({}).toArray();
+    try {
+        const limitTime = Date.now() - 10000;
+        for (let participant of participants) {
+            if (participant.lastStatus < limitTime) {
+                await dbBatePapoUOL.collection('messages').insertOne({
+                    from: participant.name,
+                    to: 'Todos',
+                    text: 'Sai da sala...',
+                    type: 'status',
+                    time: dayjs(Date.now()).format('hh:mm:ss')
+                });
+                await dbBatePapoUOL.collection('participants').deleteOne( { name: participant.name } );
+            }
+        }
+        mongoClient.close();
+    } catch (error) {
+        mongoClient.close();
+    }
+}, 15000);
+
 app.post('/participants', async(req, res) => {
     let validateName = nameSchema.validate(req.body);
     if ( validateName.error ) {
@@ -52,12 +76,12 @@ app.post('/participants', async(req, res) => {
             mongoClient.close();
         }
     } catch (error) {
-        res.status(500).send('A culpa foi do estagiário');
+        res.status(500).send(error);
         mongoClient.close();
     }
 });
 
-app.get('/participants', async(req, res) => {
+app.get('/participants', async(res) => {
     try {
         await mongoClient.connect();
         const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
@@ -65,7 +89,7 @@ app.get('/participants', async(req, res) => {
         res.status(200).send(participants);
         mongoClient.close();
     } catch (error) {
-        res.status(500).send('A culpa foi do estagiário');
+        res.status(500).send(error);
         mongoClient.close();
     }
 });
@@ -98,7 +122,7 @@ app.post('/messages', async (req, res) => {
         res.sendStatus(201);
         mongoClient.close();
     } catch(error) {
-        res.status(500).send('A culpa foi do estagiário');
+        res.status(500).send(error);
         mongoClient.close();
     }
 });
@@ -120,7 +144,7 @@ app.get('/messages', async (req, res) => {
         }
         mongoClient.close();
     } catch(error) {
-        res.status(500).send('A culpa foi do estagiário');
+        res.status(500).send(error);
         mongoClient.close();
     }
 });
@@ -140,7 +164,7 @@ app.post('/status', async (req, res) => {
         res.sendStatus(200);
         mongoClient.close();
     } catch(error) {
-        res.status(500).send('A culpa foi do estagiário');
+        res.status(500).send(error);
         mongoClient.close();
     }
 });
