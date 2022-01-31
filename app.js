@@ -175,19 +175,73 @@ app.delete('/messages/:id', async(req, res) => {
         const id = req.params.id;
         await mongoClient.connect();
         const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+        let validateUser = await dbBatePapoUOL.collection('participants').find({name: user}).toArray();
+        if (validateUser.length === 0) {
+            res.status(422).send('Usuário não existe na lista de participantes');
+            mongoClient.close();
+            return
+        };
         const validateMessage = await dbBatePapoUOL.collection('messages').findOne( { _id: ObjectId(id) } );
         if (!validateMessage) {
             res.sendStatus(404).send('Não existe mensagem com esse ID');
             mongoClient.close();
             return
         }
-        if (validateMessage.from != user) {
+        if (validateMessage.from !== user) {
             res.sendStatus(401).send('Usuário não é dono da mensagem');
             mongoClient.close();
             return
         }
         await dbBatePapoUOL.collection('messages').deleteOne( { _id: ObjectId(id) } );
         res.sendStatus(200);
+        mongoClient.close();
+    } catch(error) {
+        res.status(500).send(error);
+        mongoClient.close();
+    }
+});
+
+app.put('/messages/:id', async (req, res) => {
+    const user = stripHtml(req.headers.user, {trimOnlySpaces: true}).result;
+    const id = req.params.id;
+    await mongoClient.connect();
+    const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+    let validateUser = await dbBatePapoUOL.collection('participants').find({name: user}).toArray();
+    if (validateUser.length === 0) {
+        res.status(422).send('Usuário não existe na lista de participantes');
+        mongoClient.close();
+        return
+    };
+    req.body.to = stripHtml(req.body.to, {trimOnlySpaces: true}).result;
+    req.body.text = stripHtml(req.body.text, {trimOnlySpaces: true}).result;
+    req.body.type = stripHtml(req.body.type, {trimOnlySpaces: true}).result;
+    const validateMessage = messageSchema.validate(req.body);
+    if (validateMessage.error) {
+        res.status(422).send('Nem a mensagem nem o destinatário podem ser vazios');
+        mongoClient.close();
+        return
+    };
+    try {
+        const validateMessageID = await dbBatePapoUOL.collection('messages').findOne( { _id: ObjectId(id) } );
+        if (!validateMessageID) {
+            res.sendStatus(404).send('Não existe mensagem com esse ID');
+            mongoClient.close();
+            return
+        };
+        if (validateMessageID.from !== user) {
+            res.sendStatus(401).send('Usuário não é dono da mensagem');
+            mongoClient.close();
+            return
+        };
+        await dbBatePapoUOL.collection('messages').replaceOne( 
+            { _id: ObjectId(id) },
+            { 
+                from: user, 
+                ...req.body, 
+                time: dayjs().locale('pt-br').format('HH:mm:ss') 
+            }
+        );
+        res.sendStatus(201);
         mongoClient.close();
     } catch(error) {
         res.status(500).send(error);
