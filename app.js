@@ -1,14 +1,14 @@
+import dotenv from "dotenv";
 import express, { json } from "express";
 import cors from 'cors';
 import joi from 'joi';
-import dotenv from 'dotenv';
 import dayjs from 'dayjs';
 import {MongoClient}from 'mongodb';
 import {stripHtml} from 'string-strip-html';
 
 dotenv.config();
 
-const app = express()
+const app = express();
 
 app.use(cors())
 app.use(express.json())
@@ -22,7 +22,7 @@ const messageSchema = joi.object({
     type: joi.alternatives().valid('message', 'private_message').required()
 });
 
-const mongoClient = new MongoClient('mongodb://localhost:27017');
+const mongoClient = new MongoClient(process.env.MONGO_URI);
 
 setInterval ( async () => {
     await mongoClient.connect();
@@ -81,14 +81,14 @@ app.post('/participants', async(req, res) => {
     }
 });
 
-app.get('/participants', async(res) => {
+app.get('/participants', async(req, res) => {
     try {
         await mongoClient.connect();
         const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
         const participants = await dbBatePapoUOL.collection('participants').find({}).toArray();
         res.status(200).send(participants);
         mongoClient.close();
-    } catch (error) {
+    } catch(error) {
         res.status(500).send(error);
         mongoClient.close();
     }
@@ -136,7 +136,7 @@ app.get('/messages', async (req, res) => {
         let messages = await dbBatePapoUOL.collection('messages').find({ 
             $or: [ {from: user}, {to: user}, {to: 'Todos'}, { type: 'message' } ] 
         }).toArray();
-        if( messages < limit || isNaN(limit) || limit < 0) {
+        if ( messages < limit || isNaN(limit) || limit < 0) {
             res.status(200).send(messages);
         } else {
             const limitedMessages = messages.slice(-limit)
@@ -169,6 +169,6 @@ app.post('/status', async (req, res) => {
     }
 });
 
-app.listen(5000, () => {
-    console.log("Rodando em http://localhost:5000");
-});
+app.listen(process.env.PORT, () => {
+    console.log(`Server is litening on port ${process.env.PORT}.`);
+  });
