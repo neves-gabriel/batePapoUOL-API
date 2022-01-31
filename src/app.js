@@ -30,7 +30,7 @@ app.post( '/participants', async( req, res ) => {
         res.status(422).send('Nome não pode ser vazio');
         return
     };
-    req.body.name = stripHtml(req.body.name, {trimOnlySpaces: true}).result;
+    const name = stripHtml(req.body.name, {trimOnlySpaces: true}).result;
     try {
         await mongoClient.connect();
         const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
@@ -40,9 +40,9 @@ app.post( '/participants', async( req, res ) => {
             mongoClient.close();
         }
         else {
-            await dbBatePapoUOL.collection('participants').insertOne({ name: req.body.name, lastStatus: Date.now() });
+            await dbBatePapoUOL.collection('participants').insertOne({ name: name, lastStatus: Date.now() });
             await dbBatePapoUOL.collection('messages').insertOne({
-                from: req.body.name, 
+                from: name, 
                 to: 'Todos', 
                 text: 'entra na sala...', 
                 type: 'status', 
@@ -71,10 +71,10 @@ app.get( '/participants', async( req, res ) => {
 });
 
 app.post('/messages', async (req, res) => {
-    req.headers.user = stripHtml(req.headers.user, {trimOnlySpaces: true}).result;
+    const user = stripHtml(req.headers.user, {trimOnlySpaces: true}).result;
     await mongoClient.connect();
     const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
-    let validateUser = await dbBatePapoUOL.collection('participants').find({name: req.headers.user}).toArray();
+    let validateUser = await dbBatePapoUOL.collection('participants').find({name: user}).toArray();
     if (validateUser.length === 0) {
         res.status(422).send('Usuário não existe na lista de participantes');
         mongoClient.close();
@@ -91,7 +91,7 @@ app.post('/messages', async (req, res) => {
     }
     try {
         await dbBatePapoUOL.collection('messages').insertOne({ 
-            from: req.headers.user, 
+            from: user, 
             ...req.body, 
             time: dayjs().locale('pt-br').format('HH:mm:ss') 
         });
@@ -102,6 +102,28 @@ app.post('/messages', async (req, res) => {
         mongoClient.close();
     }
 });
+
+app.get('/messages', async (req, res) => {
+    const user = req.headers.user;
+    const limit = parseInt(req.query.limit);
+    await mongoClient.connect();
+    const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+    try {
+        let messages = await dbBatePapoUOL.collection('messages').find({ 
+            $or: [ {from: user}, {to: user}, {to: 'Todos'}, { type: 'message' } ] 
+        }).toArray();
+        if( messages < limit || isNaN(limit) || limit < 0) {
+            res.status(200).send(messages);
+        } else {
+            const limitedMessages = messages.slice(-limit)
+            res.status(200).send(limitedMessages)
+        }
+        mongoClient.close();
+    } catch(error) {
+        res.status(500).send('A culpa foi do estagiário');
+        mongoClient.close();
+    }
+})
 
 app.listen(5000, () => {
     console.log("Rodando em http://localhost:5000");
