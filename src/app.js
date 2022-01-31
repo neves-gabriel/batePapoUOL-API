@@ -40,7 +40,7 @@ app.post( '/participants', async( req, res ) => {
             mongoClient.close();
         }
         else {
-            await dbBatePapoUOL.collection('participants').insertOne( { name: req.body.name, lastStatus: Date.now() } );
+            await dbBatePapoUOL.collection('participants').insertOne({ name: req.body.name, lastStatus: Date.now() });
             await dbBatePapoUOL.collection('messages').insertOne({
                 from: req.body.name, 
                 to: 'Todos', 
@@ -65,6 +65,39 @@ app.get( '/participants', async( req, res ) => {
         res.status(200).send(participants);
         mongoClient.close();
     } catch (error) {
+        res.status(500).send('A culpa foi do estagiário');
+        mongoClient.close();
+    }
+});
+
+app.post('/messages', async (req, res) => {
+    req.headers.user = stripHtml(req.headers.user, {trimOnlySpaces: true}).result;
+    await mongoClient.connect();
+    const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+    let validateUser = await dbBatePapoUOL.collection('participants').find({name: req.headers.user}).toArray();
+    if (validateUser.length === 0) {
+        res.status(422).send('Usuário não existe na lista de participantes');
+        mongoClient.close();
+        return
+    }
+    req.body.to = stripHtml(req.body.to, {trimOnlySpaces: true}).result;
+    req.body.text = stripHtml(req.body.text, {trimOnlySpaces: true}).result;
+    req.body.type = stripHtml(req.body.type, {trimOnlySpaces: true}).result;
+    const validateMessage = messageSchema.validate(req.body);
+    if (validateMessage.error) {
+        res.status(422).send('Nem a mensagem nem o destinatário podem ser vazios');
+        mongoClient.close();
+        return
+    }
+    try {
+        await dbBatePapoUOL.collection('messages').insertOne({ 
+            from: req.headers.user, 
+            ...req.body, 
+            time: dayjs().locale('pt-br').format('HH:mm:ss') 
+        });
+        res.sendStatus(201);
+        mongoClient.close();
+    } catch(error) {
         res.status(500).send('A culpa foi do estagiário');
         mongoClient.close();
     }
