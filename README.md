@@ -22,16 +22,16 @@ App available at:
 
 **Back-end:**
 <a title="JavaScript" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank" rel="noreferrer"> 
-    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" alt="javascript" width="40" height="40"/> 
+    <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" alt="javascript" height="40"/> 
 </a>
 <a title="Node JS" href="https://nodejs.org" target="_blank" rel="noreferrer"> 
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Node.js_logo.svg/1200px-Node.js_logo.svg.png" alt="nodejs" width="40" height="40"/> 
+    <img src="https://www.opus-software.com.br/wp-content/uploads/2018/09/nodejs.jpg" alt="nodejs" height="40"/> 
 </a>
 <a title="Express JS" href="https://expressjs.com/" target="_blank" rel="noreferrer"> 
-    <img src="https://upload.wikimedia.org/wikipedia/commons/6/64/Expressjs.png" alt="expressjs" width="40" height="40"/> 
+    <img src="https://expressjs.com/images/express-facebook-share.png" alt="expressjs" height="40"/> 
 </a>
 <a title="Mongodb" href="https://mongodb.com/" target="_blank" rel="noreferrer"> 
-    <img src="https://sempreupdate.com.br/wp-content/uploads/2019/09/instalar-mongodb-4-no-ubuntu-18-04-lts.png" alt="mongodb" width="40" height="40"/> 
+    <img src="https://sempreupdate.com.br/wp-content/uploads/2019/09/instalar-mongodb-4-no-ubuntu-18-04-lts.png" alt="mongodb" height="40"/> 
 </a>
 
 ## How to run
