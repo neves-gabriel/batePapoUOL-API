@@ -3,7 +3,7 @@ import express, { json } from "express";
 import cors from 'cors';
 import joi from 'joi';
 import dayjs from 'dayjs';
-import {MongoClient}from 'mongodb';
+import {MongoClient, ObjectId} from 'mongodb'
 import {stripHtml} from 'string-strip-html';
 
 dotenv.config();
@@ -169,6 +169,32 @@ app.post('/status', async (req, res) => {
     }
 });
 
+app.delete('/messages/:id', async(req, res) => {
+    try {
+        const user = req.headers.user;
+        const id = req.params.id;
+        await mongoClient.connect();
+        const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+        const validateMessage = await dbBatePapoUOL.collection('messages').findOne( { _id: ObjectId(id) } );
+        if (!validateMessage) {
+            res.sendStatus(404).send('Não existe mensagem com esse ID');
+            mongoClient.close();
+            return
+        }
+        if (validateMessage.from != user) {
+            res.sendStatus(401).send('Usuário não é dono da mensagem');
+            mongoClient.close();
+            return
+        }
+        await dbBatePapoUOL.collection('messages').deleteOne( { _id: ObjectId(id) } );
+        res.sendStatus(200);
+        mongoClient.close();
+    } catch(error) {
+        res.status(500).send(error);
+        mongoClient.close();
+    }
+});
+
 app.listen(process.env.PORT, () => {
     console.log(`Server is litening on port ${process.env.PORT}.`);
-  });
+});
