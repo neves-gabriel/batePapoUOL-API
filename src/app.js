@@ -24,7 +24,7 @@ const messageSchema = joi.object({
 
 const mongoClient = new MongoClient('mongodb://localhost:27017');
 
-app.post( '/participants', async( req, res ) => {
+app.post('/participants', async(req, res) => {
     let validateName = nameSchema.validate(req.body);
     if ( validateName.error ) {
         res.status(422).send('Nome não pode ser vazio');
@@ -57,7 +57,7 @@ app.post( '/participants', async( req, res ) => {
     }
 });
 
-app.get( '/participants', async( req, res ) => {
+app.get('/participants', async(req, res) => {
     try {
         await mongoClient.connect();
         const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
@@ -123,7 +123,27 @@ app.get('/messages', async (req, res) => {
         res.status(500).send('A culpa foi do estagiário');
         mongoClient.close();
     }
-})
+});
+
+app.post('/status', async (req, res) => {
+    try {
+        const user = stripHtml(req.headers.user).result;
+        await mongoClient.connect();
+        const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+        const validateUser = await dbBatePapoUOL.collection('participants').find({ name: user }).toArray();
+        if (validateUser.length === 0) {
+            res.sendStatus(404);
+            mongoClient.close();
+            return
+        }
+        await dbBatePapoUOL.collection('participants').updateOne({ name: user }, { $set: {lastStatus: Date.now()} });
+        res.sendStatus(200);
+        mongoClient.close();
+    } catch(error) {
+        res.status(500).send('A culpa foi do estagiário');
+        mongoClient.close();
+    }
+});
 
 app.listen(5000, () => {
     console.log("Rodando em http://localhost:5000");
