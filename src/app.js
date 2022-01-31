@@ -41,20 +41,34 @@ app.post( '/participants', async( req, res ) => {
         }
         else {
             await dbBatePapoUOL.collection('participants').insertOne( { name: req.body.name, lastStatus: Date.now() } );
-            await dbBatePapoUOL.collection('messages').insertOne( {
+            await dbBatePapoUOL.collection('messages').insertOne({
                 from: req.body.name, 
                 to: 'Todos', 
                 text: 'entra na sala...', 
                 type: 'status', 
                 time: dayjs().locale('pt-br').format('HH:mm:ss') 
-            } );
+            });
             res.sendStatus(201);
             mongoClient.close();
         }
-    } catch {
+    } catch (error) {
         res.status(500).send('A culpa foi do estagiário');
+        mongoClient.close();
     }
-})
+});
+
+app.get( '/participants', async( req, res ) => {
+    try {
+        await mongoClient.connect();
+        const dbBatePapoUOL = mongoClient.db('batePapoUOL_API');
+        const participants = await dbBatePapoUOL.collection('participants').find({}).toArray();
+        res.status(200).send(participants);
+        mongoClient.close();
+    } catch (error) {
+        res.status(500).send('A culpa foi do estagiário');
+        mongoClient.close();
+    }
+});
 
 app.listen(5000, () => {
     console.log("Rodando em http://localhost:5000");
